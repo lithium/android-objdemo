@@ -10,6 +10,7 @@ import android.util.Log;
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
+import java.nio.FloatBuffer;
 import com.hlidskialf.android.game.models.ObjModel;
 import com.hlidskialf.android.game.util.Point3;
 
@@ -27,6 +28,12 @@ public class DemoRendererView extends GLSurfaceView
     Point3 mCamera;
 
 
+    FloatBuffer mGrid;
+    int mGridSize;
+
+
+
+
     public DemoRendererView(Context context) { this(context,null); }
     public DemoRendererView(Context context, AttributeSet attrs) 
     {
@@ -42,7 +49,7 @@ public class DemoRendererView extends GLSurfaceView
         mOrigin = new Point3(0f,0f,0f);
         mRotate = new Point3(0f,0f,0f);
 
-        mCamera = new Point3(0f,0f,7f);
+        mCamera = new Point3(0f,3f,3.9f);
     }
     public void start()
     {
@@ -67,7 +74,7 @@ public class DemoRendererView extends GLSurfaceView
     private void tick()
     {
         //mRotate.x += 0.5f;
-        mRotate.y += 0.5f;
+        //mRotate.y += 0.5f;
         //mRotate.z += 0.5f;
     }
 
@@ -92,6 +99,7 @@ public class DemoRendererView extends GLSurfaceView
             gl.glEnable(GL10.GL_LIGHT0);
 
 
+            build_grid(8);
             mModel.bindTextures(mContext, gl);
         }
         public void onSurfaceChanged(GL10 gl, int w, int h)
@@ -113,8 +121,6 @@ public class DemoRendererView extends GLSurfaceView
         {
             tick();
 
-            gl.glEnableClientState(GL10.GL_VERTEX_ARRAY);
-            gl.glEnableClientState(GL10.GL_TEXTURE_COORD_ARRAY);
             gl.glClear(GL10.GL_COLOR_BUFFER_BIT | GL10.GL_DEPTH_BUFFER_BIT);
             gl.glPushMatrix();
 
@@ -124,26 +130,77 @@ public class DemoRendererView extends GLSurfaceView
 
 
             //draw_grid
-            gl.glPushMatrix();
-
-
-            gl.glPopMatrix();
+            draw_grid(gl);
 
 
             //draw_model
             gl.glPushMatrix();
+
+                gl.glRotatef(mRotate.z, 0f, 0f, 1f);
+                gl.glRotatef(mRotate.y, 0f, 1f, 0f);
+                gl.glRotatef(mRotate.x, 1f, 0f, 0f);
                 gl.glTranslatef(mOrigin.x, mOrigin.y, mOrigin.z);
-                gl.glRotatef(mRotate.y, 0f, 1f, 1f);
                 mModel.draw(gl);
 
                 //draw_lights
                 gl.glLightfv(GL10.GL_LIGHT0, GL10.GL_POSITION, new float[] {-1f,10f,5f,1f}, 0);
+
             gl.glPopMatrix();
 
 
             gl.glPopMatrix();
-            gl.glDisableClientState(GL10.GL_VERTEX_ARRAY);
+        }
+
+
+        private void build_grid(int GRID_SIZE)
+        {
+            float x,y,z;
+
+            float i;
+
+            float half = GRID_SIZE/2f;
+
+            mGridSize = GRID_SIZE;
+            mGrid = FloatBuffer.allocate((GRID_SIZE+1)*12*3);
+
+            for (i=-half; i <= +half; i++)
+            {
+                mGrid.put(i); mGrid.put(-half); mGrid.put(+half);
+                mGrid.put(i); mGrid.put(-half); mGrid.put(-half);
+                mGrid.put(i); mGrid.put(+half); mGrid.put(-half);
+                mGrid.put(i); mGrid.put(+half); mGrid.put(+half);
+
+                mGrid.put(-half); mGrid.put(i); mGrid.put(+half);
+                mGrid.put(-half); mGrid.put(i); mGrid.put(-half);
+                mGrid.put(+half); mGrid.put(i); mGrid.put(-half);
+                mGrid.put(+half); mGrid.put(i); mGrid.put(+half);
+
+                mGrid.put(-half); mGrid.put(+half); mGrid.put(i);
+                mGrid.put(-half); mGrid.put(-half); mGrid.put(i);
+                mGrid.put(+half); mGrid.put(-half); mGrid.put(i);
+                mGrid.put(+half); mGrid.put(+half); mGrid.put(i);
+            }
+            mGrid.rewind();
+
+
+        }
+        public void draw_grid(GL10 gl)
+        {
+            gl.glPushMatrix();
+
+            int ofs=0;
+            int i;
+
             gl.glDisableClientState(GL10.GL_TEXTURE_COORD_ARRAY);
+
+            gl.glVertexPointer(3, GL10.GL_FLOAT, 0, mGrid);
+            for (i=0; i <= mGridSize*3; i++)
+            {
+                gl.glDrawArrays(GL10.GL_LINE_LOOP, ofs, 4);
+                ofs+=4;
+            }
+
+            gl.glPopMatrix();
         }
 
 

@@ -53,17 +53,21 @@ public class ObjModel
 
     public void draw(GL10 gl)
     {
+        gl.glEnableClientState(GL10.GL_VERTEX_ARRAY);
+        gl.glEnableClientState(GL10.GL_TEXTURE_COORD_ARRAY);
 
         gl.glVertexPointer(3, GL10.GL_FLOAT, 0, mV);
-        if (mVt != null) {
-            if (mTextures != null) {
-                gl.glBindTexture(GL10.GL_TEXTURE_2D, mTextures[0]);
-            }
+        if (mVt != null && mTextures != null) {
+            gl.glBindTexture(GL10.GL_TEXTURE_2D, mTextures[0]);
             gl.glTexCoordPointer(2, GL10.GL_FLOAT, 0, mVt);
         }
-        if (mVn != null)
+        if (mVn != null) {
             gl.glNormalPointer(GL10.GL_FLOAT, 0, mVn);
+        }
         gl.glDrawArrays(GL10.GL_TRIANGLES, 0, mVertexCount);
+
+        gl.glDisableClientState(GL10.GL_VERTEX_ARRAY);
+        gl.glDisableClientState(GL10.GL_TEXTURE_COORD_ARRAY);
 
     }
 
