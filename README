@@ -1,0 +1,3 @@
+basic *.obj model loader for android opengl es
+
+does not load *.mtl files; uses the 'usemtl' directive to specfiy a texture name to load
