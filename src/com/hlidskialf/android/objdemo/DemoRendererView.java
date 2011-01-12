@@ -17,10 +17,12 @@ import com.hlidskialf.android.game.util.Point3;
 
 public class DemoRendererView extends GLSurfaceView
 {
+    public static final int GRID_SIZE=8;
+
     Context mContext;
     DemoRenderer mRenderer;
 
-    int mViewWidth, mViewHeight;
+    float mViewWidth, mViewHeight;
 
     ObjModel mModel;
     Point3 mOrigin;
@@ -61,11 +63,83 @@ public class DemoRendererView extends GLSurfaceView
 
 
 
+    int ptr1_id=-1, ptr2_id=-1;
+    float last_x=-1, last_y=-1;
     @Override
     public boolean onTouchEvent(MotionEvent ev)
     {
+        int action = ev.getActionMasked();
+        int index = ev.getActionIndex();
+        int id = ev.getPointerId(index);
+        int count = ev.getPointerCount();
+
+        switch (action)
+        {
+            case MotionEvent.ACTION_DOWN:
+                ptr1_id = id;
+                break;
+
+            case MotionEvent.ACTION_POINTER_DOWN:
+                ptr2_id = id;
+                break;
+
+            case MotionEvent.ACTION_POINTER_UP:
+                ptr2_id = -1;
+                break;
+
+            case MotionEvent.ACTION_UP:
+                ptr1_id = -1;
+                last_x = -1;
+                last_y = -1;
+                break;
+
+            case MotionEvent.ACTION_MOVE:
+
+                float x,y;
+
+                if (count >= 2) {
+                    x = ev.getX(index);
+                    y = ev.getY(index);
+
+                    if (last_x != -1) 
+                        drag_xy(x - last_x, y - last_y);
+                }
+                else {
+                    x = ev.getX(index);
+                    y = ev.getY(index);
+
+                    if (last_x != -1) 
+                        drag_xz(x - last_x, y - last_y);
+                }
+
+                last_x = x;
+                last_y = y;
+
+
+                break;
+        }
         return true;
     }
+
+    private void drag_xy(float dx, float dy)
+    {
+
+        mOrigin.x += (dx/mViewWidth)*mGridSize;
+        mOrigin.y -= (dy/mViewHeight)*mGridSize;
+
+        float half = mGridSize/2;
+        mOrigin.minmax(-half+.5f,-half+.5f,-half+.5f,half-.5f,half-.5f,half-.5f);
+    }
+
+    private void drag_xz(float dx, float dy)
+    {
+        mOrigin.x += (dx/mViewWidth)*mGridSize;
+        mOrigin.z += (dy/mViewHeight)*mGridSize;
+
+        float half = mGridSize/2;
+        mOrigin.minmax(-half+.5f,-half+.5f,-half+.5f,half-.5f,half-.5f,half-.5f);
+    }
+
 
 
 
@@ -99,18 +173,18 @@ public class DemoRendererView extends GLSurfaceView
             gl.glEnable(GL10.GL_LIGHT0);
 
 
-            build_grid(8);
+            build_grid(GRID_SIZE);
             mModel.bindTextures(mContext, gl);
         }
         public void onSurfaceChanged(GL10 gl, int w, int h)
         {
-            mViewWidth = w;
-            mViewHeight = h;
+            mViewWidth = (float)w;
+            mViewHeight = (float)h;
             gl.glViewport(0,0,w,h);
 
             gl.glMatrixMode(GL10.GL_PROJECTION);
             gl.glLoadIdentity();
-            GLU.gluPerspective(gl, 60.0f, (float)w/(float)h, 0.1f, 100f);
+            GLU.gluPerspective(gl, 60.0f, mViewWidth/mViewHeight, 0.1f, 100f);
 
             gl.glMatrixMode(GL10.GL_MODELVIEW);
             gl.glLoadIdentity();

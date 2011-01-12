@@ -34,6 +34,13 @@ public class Point3 extends Object
         this.z = z;
     }
 
+    public void minmax(float minx, float miny, float minz, float maxx, float maxy, float maxz)
+    {
+        this.x = Math.min(Math.max(this.x, minx), maxx);
+        this.y = Math.min(Math.max(this.y, miny), maxy);
+        this.z = Math.min(Math.max(this.z, minz), maxz);
+    }
+
     @Override 
     public boolean equals(Object o) {
         if (this == o) 
