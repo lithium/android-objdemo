@@ -1,0 +1,7 @@
+.*.sw*
+build.xml
+*.properties
+bin
+gen
+.classpath
+.project
