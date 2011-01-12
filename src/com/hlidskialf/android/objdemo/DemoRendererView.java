@@ -34,7 +34,7 @@ public class DemoRendererView extends GLSurfaceView
         mContext = context;
 
         try{
-            mModel = ObjModel.loadFromStream(context.getResources().openRawResource(R.raw.eschercube));
+            mModel = ObjModel.loadFromStream(context.getResources().openRawResource(R.raw.dice));
         } catch (java.io.IOException e) {
             Log.v("DemoRendererView", "loading model: "+e);
         }
@@ -66,9 +66,9 @@ public class DemoRendererView extends GLSurfaceView
 
     private void tick()
     {
-        mRotate.x += 0.5f;
+        //mRotate.x += 0.5f;
         mRotate.y += 0.5f;
-        mRotate.z += 0.5f;
+        //mRotate.z += 0.5f;
     }
 
     private class DemoRenderer implements GLSurfaceView.Renderer
