@@ -47,7 +47,7 @@ public class DemoRendererView extends GLSurfaceView
         mContext = context;
 
         try{
-            mModel = ObjModel.loadFromStream(context.getResources().openRawResource(R.raw.dice));
+            mModel = ObjModel.loadFromStream(context.getResources().openRawResource(R.raw.axis_die), "mat1_dice.jpg");
         } catch (java.io.IOException e) {
             Log.v("DemoRendererView", "loading model: "+e);
         }
@@ -225,14 +225,14 @@ public class DemoRendererView extends GLSurfaceView
                         y = ev.getY(index);
 
                         if (last_x != -1) 
-                            drag_xy(x - last_x, y - last_y);
+                            drag_xz(x - last_x, y - last_y);
                     }
                     else {
                         x = ev.getX(index);
                         y = ev.getY(index);
 
                         if (last_x != -1) 
-                            drag_xz(x - last_x, y - last_y);
+                            drag_xy(x - last_x, y - last_y);
                     }
 
                     last_x = x;
@@ -288,6 +288,7 @@ public class DemoRendererView extends GLSurfaceView
                     }
                     break;
             }
+            //mRotate.minmax(-360,-360,-360, 360,360,360);
         }
 
     }
