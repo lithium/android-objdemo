@@ -56,32 +56,37 @@ public class ObjModel
         gl.glEnableClientState(GL10.GL_VERTEX_ARRAY);
         gl.glEnableClientState(GL10.GL_TEXTURE_COORD_ARRAY);
 
-        gl.glVertexPointer(3, GL10.GL_FLOAT, 0, mV);
-        if (mVt != null && mTextures != null) {
-            gl.glBindTexture(GL10.GL_TEXTURE_2D, mTextures[0]);
-            gl.glTexCoordPointer(2, GL10.GL_FLOAT, 0, mVt);
+
+        for (Model model : mModels) {
+
+            gl.glVertexPointer(3, GL10.GL_FLOAT, 0, model.v);
+            if (model.vt != null && mTextures != null) {
+                gl.glBindTexture(GL10.GL_TEXTURE_2D, mTextures[0]);
+                gl.glTexCoordPointer(2, GL10.GL_FLOAT, 0, model.vt);
+            }
+            if (model.vn != null) {
+                gl.glNormalPointer(GL10.GL_FLOAT, 0, model.vn);
+            }
+            gl.glDrawArrays(GL10.GL_TRIANGLES, 0, model.v_size);
+
         }
-        if (mVn != null) {
-            gl.glNormalPointer(GL10.GL_FLOAT, 0, mVn);
-        }
-        gl.glDrawArrays(GL10.GL_TRIANGLES, 0, mVertexCount);
 
         gl.glDisableClientState(GL10.GL_VERTEX_ARRAY);
         gl.glDisableClientState(GL10.GL_TEXTURE_COORD_ARRAY);
 
     }
 
-    public static ObjModel loadFromStream(InputStream is) throws IOException
+    public static ObjModel loadFromStream(InputStream is, String texture_name) throws IOException
     {
-        return ObjLoader.loadFromStream(is);
+        ObjModel obj = ObjLoader.loadFromStream(is);
+        obj.mTextureName = texture_name;
+        return obj;
     }
 
 
     /* private */
-    private FloatBuffer mV;
-    private FloatBuffer mVt;
-    private FloatBuffer mVn;
-    private int mVertexCount;
+
+    private Model mModels[];
     private int mTextures[];
     private String mTextureName;
 
@@ -97,6 +102,10 @@ public class ObjModel
             ArrayList<Point3> vn = new ArrayList<Point3>();
             ArrayList<Face> f = new ArrayList<Face>();
 
+            ArrayList<Model> o = new ArrayList<Model>();
+
+            boolean o_pending=false;
+
             while(reader.ready()) 
             {
                 String line = reader.readLine();
@@ -106,6 +115,17 @@ public class ObjModel
                 StringTokenizer tok = new StringTokenizer(line);
                 String cmd = tok.nextToken();
 
+                if (cmd.equals("o")) {
+                    if (o_pending) {
+                        Model model = new Model();
+                        model.fill(f, vt.size() > 0, vn.size() > 0);
+                        o.add(model);
+                    }
+                    else {
+                        o_pending=true;
+                    }
+                }
+                else
                 if (cmd.equals("v")) {
                     v.add(read_point(tok));
                 }
@@ -133,7 +153,6 @@ public class ObjModel
                         if (face_tok.hasMoreTokens()) vt_idx = Integer.parseInt(face_tok.nextToken());
                         if (face_tok.hasMoreTokens()) vn_idx = Integer.parseInt(face_tok.nextToken());
 
-
                         //Log.v("objmodel", "face: "+v_idx+"/"+vt_idx+"/"+vn_idx);
 
                         face.addVertex(
@@ -144,37 +163,24 @@ public class ObjModel
                     }
                     f.add(face);
                 }
+                /*
                 else
                 if (cmd.equals("usemtl")) {
                     // lets not bother parsing material file
                     // just use the name as an asset path
                     obj.mTextureName = tok.nextToken();
                 }
+                */
             }
 
-
-            int f_len = f.size();
-            obj.mVertexCount = f_len * 3;
-            obj.mV = FloatBuffer.allocate(obj.mVertexCount*3);
-
-            if (vt.size() > 0) {
-                obj.mVt = FloatBuffer.allocate(obj.mVertexCount*2);
+            if (o_pending) {
+                Model model = new Model();
+                model.fill(f, vt.size() > 0, vn.size() > 0);
+                o.add(model);
             }
 
-            if (vn.size() > 0) {
-                obj.mVn = FloatBuffer.allocate(obj.mVertexCount*3);
-            }
-
-            int i;
-            for (i=0; i < f_len; i++) {
-                Face face = f.get(i);
-                face.pushOnto(obj.mV, obj.mVt, obj.mVn);
-            }
-            obj.mV.rewind();
-            if (obj.mVt != null)
-                obj.mVt.rewind();
-            if (obj.mVn != null)
-                obj.mVn.rewind();
+            obj.mModels = new Model[o.size()];
+            o.toArray(obj.mModels);
 
             return obj;
         }
@@ -196,48 +202,83 @@ public class ObjModel
             return ret;
         }
 
-        public static class Face
+    }
+
+    private static class Face
+    {
+        Point3 v[];
+        Point3 vt[];
+        Point3 vn[];
+        int size;
+        int count;
+
+        public Face(int size)
         {
-            Point3 v[];
-            Point3 vt[];
-            Point3 vn[];
-            int size;
-            int count;
+            this.size = size;
+            this.count = 0;
+            this.v = new Point3[size];
+            this.vt = new Point3[size];
+            this.vn = new Point3[size];
+        }
+        public boolean addVertex(Point3 v, Point3 vt, Point3 vn)
+        {
+            if (count >= size)
+                return false;
+            this.v[count] = v;
+            this.vt[count] = vt;
+            this.vn[count] = vn;
+            count++;
+            return true;
+        }
 
-            public Face(int size)
-            {
-                this.size = size;
-                this.count = 0;
-                this.v = new Point3[size];
-                this.vt = new Point3[size];
-                this.vn = new Point3[size];
-            }
-            public boolean addVertex(Point3 v, Point3 vt, Point3 vn)
-            {
-                if (count >= size)
-                    return false;
-                this.v[count] = v;
-                this.vt[count] = vt;
-                this.vn[count] = vn;
-                count++;
-                return true;
-            }
+        public void pushOnto(FloatBuffer v_buffer, FloatBuffer vt_buffer, FloatBuffer vn_buffer)
+        {
+            int i;
+            for (i=0; i<size; i++) {
+                v_buffer.put(v[i].x); v_buffer.put(v[i].y); v_buffer.put(v[i].z);
 
-            public void pushOnto(FloatBuffer v_buffer, FloatBuffer vt_buffer, FloatBuffer vn_buffer)
-            {
-                int i;
-                for (i=0; i<size; i++) {
-                    v_buffer.put(v[i].x); v_buffer.put(v[i].y); v_buffer.put(v[i].z);
+                if (vt_buffer != null && vt[i] != null) {
+                    vt_buffer.put(vt[i].x); vt_buffer.put(vt[i].y);
+                }
 
-                    if (vt_buffer != null && vt[i] != null) {
-                        vt_buffer.put(vt[i].x); vt_buffer.put(vt[i].y);
-                    }
-
-                    if (vn_buffer != null && vn[i] != null) {
-                        vn_buffer.put(vn[i].x); vn_buffer.put(vn[i].y); vn_buffer.put(vn[i].z);
-                    }
+                if (vn_buffer != null && vn[i] != null) {
+                    vn_buffer.put(vn[i].x); vn_buffer.put(vn[i].y); vn_buffer.put(vn[i].z);
                 }
             }
+        }
+    }
+
+
+    private static class Model 
+    {
+        public FloatBuffer v;
+        public FloatBuffer vt;
+        public FloatBuffer vn;
+        public int v_size;
+
+        public void fill(ArrayList<Face> faces, boolean has_tex, boolean has_normals)
+        {
+            int f_len = faces.size();
+
+            this.v_size = f_len * 3;
+            this.v = FloatBuffer.allocate(this.v_size*3);
+
+            if (has_tex)
+                this.vt = FloatBuffer.allocate(this.v_size*2);
+            if (has_normals)
+                this.vn = FloatBuffer.allocate(this.v_size*3);
+
+            int i;
+            for (i=0; i < f_len; i++) {
+                Face face = faces.get(i);
+                face.pushOnto(this.v, this.vt, this.vn);
+            }
+
+            this.v.rewind();
+            if (this.vt != null)
+                this.vt.rewind();
+            if (this.vn != null)
+                this.vn.rewind();
         }
     }
 
